@@ -1,0 +1,23 @@
+# Core image processing libraries
+opencv-python
+opencv-contrib-python
+numpy
+Pillow
+
+# HTTP requests for dataset builder
+requests
+
+# Scientific computing and metrics
+scikit-image
+scipy
+
+# Visualization
+matplotlib
+seaborn
+
+# Data handling
+pandas
+
+# Jupyter notebook support (optional)
+jupyter
+ipykernel

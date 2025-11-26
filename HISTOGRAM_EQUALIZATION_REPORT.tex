@@ -1,0 +1,677 @@
+\documentclass[11pt,letterpaper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\graphicspath{{data/}}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{subcaption}
+
+% Code listing settings
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!50!black},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    language=Python
+}
+
+\title{Histogram Equalization Project: \\
+Comparative Analysis of GHE and CLAHE for Image Enhancement}
+\author{Alain Kariyanga \& Pragya Mishra \\
+CS7367 - Machine Vision \\
+Kennesaw State University}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+% ===================
+% ABSTRACT
+% ===================
+\begin{abstract}
+This project presents a comprehensive comparative analysis of two histogram equalization techniques for image enhancement: Global Histogram Equalization (GHE) and Contrast Limited Adaptive Histogram Equalization (CLAHE). The study evaluates these methods on a diverse dataset of 22 images spanning 11 challenging categories including backlit silhouettes, dark portraits, foggy landscapes, low-light interiors, and night scenes. Both techniques were implemented in Python using OpenCV and evaluated using quantitative metrics including PSNR (Peak Signal-to-Noise Ratio), SSIM (Structural Similarity Index), entropy, contrast improvement, naturalness, and sharpness. Results demonstrate that CLAHE significantly outperforms GHE across most metrics, achieving an average PSNR of 22.18 dB compared to GHE's 12.28 dB, and an average SSIM of 0.807 versus 0.581. CLAHE shows particular effectiveness in preserving image quality while enhancing local contrast, with lower over-enhancement rates (31.8\%) compared to GHE (86.4\%). The findings highlight CLAHE's superior performance for practical image enhancement applications, especially in challenging lighting conditions.
+\end{abstract}
+
+\newpage
+
+% ===================
+% INTRODUCTION
+% ===================
+\section{Introduction}
+
+\subsection{Motivation}
+
+Image enhancement is a fundamental task in computer vision and digital image processing, with applications ranging from medical imaging to photography and surveillance. Many real-world images suffer from poor lighting conditions, low contrast, or uneven illumination, making them difficult to analyze visually or computationally. Histogram equalization techniques offer a powerful solution for improving image quality by redistributing pixel intensity values.
+
+\subsection{Problem Statement}
+
+This project addresses the challenge of enhancing images captured under adverse conditions such as:
+\begin{itemize}
+    \item Extreme backlighting (silhouettes)
+    \item Low-light environments (dark interiors, night scenes)
+    \item Poor visibility conditions (fog, mist)
+    \item High dynamic range scenes (bright sunlight with shadows)
+    \item Uneven illumination (indoor window lighting)
+\end{itemize}
+
+\subsection{Objectives}
+
+The primary objectives of this project are:
+\begin{enumerate}
+    \item Implement both GHE and CLAHE algorithms for image enhancement
+    \item Evaluate performance on diverse challenging image categories
+    \item Compare methods using comprehensive quantitative metrics
+    \item Identify strengths and weaknesses of each approach
+    \item Provide recommendations for practical applications
+\end{enumerate}
+
+\newpage
+
+% ===================
+% METHODOLOGY
+% ===================
+\section{Methodology}
+
+\subsection{Global Histogram Equalization (GHE)}
+
+Global Histogram Equalization redistributes pixel intensities to achieve a uniform histogram across the entire image. The transformation is defined as:
+
+\begin{equation}
+s = T(r) = (L-1) \int_0^r p_r(w) \, dw
+\end{equation}
+
+where $r$ is the input intensity, $s$ is the output intensity, $L$ is the number of gray levels, and $p_r(w)$ is the probability density function of the input intensities.
+
+For color images, GHE is applied to the luminance channel in the LAB color space to preserve color information while enhancing brightness and contrast.
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item Simple and computationally efficient
+    \item Fully automatic (no parameters required)
+    \item Effective for global contrast enhancement
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item May cause over-enhancement in some regions
+    \item Cannot adapt to local contrast variations
+    \item May amplify noise in uniform regions
+\end{itemize}
+
+\subsection{Contrast Limited Adaptive Histogram Equalization (CLAHE)}
+
+CLAHE improves upon standard Adaptive Histogram Equalization (AHE) by dividing the image into small tiles and applying histogram equalization to each tile separately. A clip limit prevents over-amplification of noise by limiting the contrast enhancement.
+
+\textbf{Key Parameters:}
+\begin{itemize}
+    \item \textbf{Clip Limit:} 2.0 (controls contrast limiting)
+    \item \textbf{Tile Grid Size:} 8×8 (divides image into 64 regions)
+    \item \textbf{Color Space:} LAB (applied to L-channel)
+\end{itemize}
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item Adapts to local contrast variations
+    \item Prevents over-enhancement through clip limiting
+    \item Better preservation of image details
+    \item Reduces noise amplification
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item More computationally expensive than GHE
+    \item Requires parameter tuning (clip limit, tile size)
+    \item May introduce tiling artifacts if not properly configured
+\end{itemize}
+
+\subsection{Implementation Details}
+
+Both methods were implemented in Python using:
+\begin{itemize}
+    \item \textbf{OpenCV (cv2):} For image processing operations
+    \item \textbf{NumPy:} For numerical computations
+    \item \textbf{scikit-image:} For quality metrics (SSIM)
+    \item \textbf{Matplotlib:} For visualization
+\end{itemize}
+
+\textbf{Processing Pipeline:}
+\begin{enumerate}
+    \item Load RGB image
+    \item Convert to LAB color space
+    \item Apply histogram equalization to L-channel
+    \item Convert back to RGB
+    \item Evaluate using multiple metrics
+    \item Save enhanced images
+\end{enumerate}
+
+\newpage
+
+% ===================
+% DATASET
+% ===================
+\section{Dataset}
+
+\subsection{Image Categories}
+
+The dataset consists of 22 carefully selected images spanning 11 challenging categories, with 2 images per category:
+
+\begin{table}[H]
+\centering
+\caption{Dataset Composition and Characteristics}
+\label{tab:dataset}
+\begin{tabular}{lll}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{Challenge Type} \\
+\midrule
+Backlit Silhouette & 2 & Extreme backlighting \\
+Bright Sunlight Shadow & 2 & High dynamic range \\
+Dark Portrait & 2 & Severe underexposure \\
+Foggy Landscape & 2 & Atmospheric scattering \\
+Indoor Window Light & 2 & Uneven illumination \\
+Low Light Interior & 2 & Extreme low light \\
+Misty Mountain & 2 & Reduced visibility \\
+Monochrome Texture & 2 & Low contrast patterns \\
+Night Street & 2 & Night scene conditions \\
+Overcast Sky & 2 & Flat lighting \\
+Sunset Portrait & 2 & Complex lighting \\
+\midrule
+\textbf{Total} & \textbf{22} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Image Characteristics}
+
+\begin{itemize}
+    \item \textbf{Format:} JPEG (RGB color images)
+    \item \textbf{Resolution:} Variable (preserved during processing)
+    \item \textbf{Color Space:} sRGB input, LAB for processing
+    \item \textbf{Bit Depth:} 8-bit per channel (24-bit color)
+\end{itemize}
+
+\subsection{Example Images}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{input/backlit_silhouette_01.jpg}
+    \caption{Example: Backlit Silhouette - Extreme backlighting creates silhouette effect with lost detail in shadow regions}
+    \label{fig:example-backlit}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{input/dark_portrait_01.jpg}
+    \caption{Example: Dark Portrait - Severe underexposure with minimal visible detail}
+    \label{fig:example-dark}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{input/foggy_landscape_01.jpg}
+    \caption{Example: Foggy Landscape - Atmospheric scattering reduces contrast and visibility}
+    \label{fig:example-foggy}
+\end{figure}
+
+\newpage
+
+% ===================
+% EVALUATION METRICS
+% ===================
+\section{Evaluation Metrics}
+
+\subsection{Peak Signal-to-Noise Ratio (PSNR)}
+
+PSNR measures the ratio between the maximum possible signal power and the power of corrupting noise. Higher values indicate better quality preservation:
+
+\begin{equation}
+\text{PSNR} = 10 \log_{10} \left( \frac{\text{MAX}_I^2}{\text{MSE}} \right)
+\end{equation}
+
+where $\text{MAX}_I = 255$ for 8-bit images, and MSE is the Mean Squared Error.
+
+\subsection{Structural Similarity Index (SSIM)}
+
+SSIM evaluates perceived image quality based on structural information, luminance, and contrast:
+
+\begin{equation}
+\text{SSIM}(x,y) = \frac{(2\mu_x\mu_y + c_1)(2\sigma_{xy} + c_2)}{(\mu_x^2 + \mu_y^2 + c_1)(\sigma_x^2 + \sigma_y^2 + c_2)}
+\end{equation}
+
+Values range from 0 to 1, where 1 indicates perfect structural similarity.
+
+\subsection{Additional Metrics}
+
+\begin{itemize}
+    \item \textbf{Entropy:} Measures information content (higher is better for enhanced images)
+    \item \textbf{Contrast Improvement:} Ratio of enhanced to original contrast
+    \item \textbf{Naturalness:} Color naturalness score based on LAB statistics
+    \item \textbf{Sharpness:} Laplacian variance indicating edge definition
+    \item \textbf{Over-enhancement Detection:} Identifies excessive contrast enhancement
+\end{itemize}
+
+\newpage
+
+% ===================
+% EXPERIMENTAL RESULTS
+% ===================
+\section{Experimental Results}
+
+\subsection{Overall Performance Comparison}
+
+Table~\ref{tab:overall-results} presents the average performance metrics across all 22 images.
+
+\begin{table}[H]
+\centering
+\caption{Overall Performance Comparison: GHE vs CLAHE}
+\label{tab:overall-results}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{GHE} & \textbf{CLAHE} \\
+\midrule
+PSNR (dB) & 12.28 & \textbf{22.18} \\
+SSIM & 0.581 & \textbf{0.807} \\
+Entropy Improvement & 99.62\% & \textbf{107.18\%} \\
+Contrast Improvement & 144.47\% & 109.99\% \\
+Naturalness & 0.901 & 0.892 \\
+Sharpness & 2390.14 & 10088.23 \\
+Over-enhancement Rate & 86.4\% & \textbf{31.8\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Findings:}
+\begin{itemize}
+    \item CLAHE achieves \textbf{80.6\% higher PSNR} than GHE (22.18 dB vs 12.28 dB)
+    \item CLAHE shows \textbf{38.9\% better SSIM} (0.807 vs 0.581)
+    \item CLAHE has significantly lower over-enhancement rate (\textbf{31.8\% vs 86.4\%})
+    \item GHE produces higher contrast improvement but at the cost of quality degradation
+\end{itemize}
+
+\subsection{Performance by Category}
+
+Table~\ref{tab:category-results} shows detailed performance breakdown by image category.
+
+\begin{table}[H]
+\centering
+\caption{Performance Metrics by Image Category}
+\label{tab:category-results}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{2}{c}{\textbf{PSNR (dB)}} & \multicolumn{2}{c}{\textbf{SSIM}} & \multicolumn{2}{c}{\textbf{Naturalness}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+\textbf{Category} & GHE & CLAHE & GHE & CLAHE & GHE & CLAHE \\
+\midrule
+Backlit Silhouette & 11.76 & \textbf{25.02} & 0.363 & \textbf{0.769} & 0.851 & \textbf{0.886} \\
+Bright Sunlight & 12.90 & \textbf{24.07} & 0.556 & \textbf{0.881} & 0.919 & \textbf{0.942} \\
+Dark Portrait & 12.20 & \textbf{29.79} & 0.467 & \textbf{0.634} & 0.639 & \textbf{0.694} \\
+Foggy Landscape & 16.65 & \textbf{22.71} & 0.846 & \textbf{0.902} & 0.945 & \textbf{0.968} \\
+Indoor Window Light & 12.57 & \textbf{21.77} & 0.681 & \textbf{0.881} & \textbf{0.948} & 0.949 \\
+Low Light Interior & 7.01 & \textbf{21.01} & 0.217 & \textbf{0.732} & \textbf{0.891} & 0.817 \\
+Misty Mountain & \textbf{20.81} & 24.74 & 0.882 & \textbf{0.920} & \textbf{0.937} & 0.926 \\
+Monochrome Texture & 12.38 & \textbf{19.30} & 0.607 & \textbf{0.802} & \textbf{0.936} & 0.881 \\
+Night Street & 8.16 & \textbf{19.05} & 0.245 & \textbf{0.652} & \textbf{0.924} & 0.878 \\
+Overcast Sky & 11.46 & \textbf{18.99} & 0.698 & \textbf{0.901} & \textbf{0.951} & 0.903 \\
+Sunset Portrait & 14.26 & \textbf{24.08} & 0.680 & \textbf{0.903} & 0.946 & \textbf{0.962} \\
+\midrule
+\textbf{Average} & 12.28 & \textbf{22.78} & 0.581 & \textbf{0.807} & 0.901 & 0.892 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Category-Specific Insights:}
+\begin{itemize}
+    \item \textbf{Dark Portrait:} CLAHE shows largest improvement (+17.59 dB PSNR)
+    \item \textbf{Low Light Interior:} CLAHE dramatically outperforms (+14.00 dB PSNR)
+    \item \textbf{Misty Mountain:} Both methods perform well; smallest difference
+    \item \textbf{Foggy Landscape:} High SSIM for both (0.846 vs 0.902)
+    \item \textbf{Night Street:} Extreme low-light benefits most from CLAHE
+\end{itemize}
+
+\subsection{Method Comparison Statistics}
+
+Table~\ref{tab:winner-analysis} shows how often each method achieves better scores.
+
+\begin{table}[H]
+\centering
+\caption{Winner Analysis: Number of Images Where Method Achieves Higher Score}
+\label{tab:winner-analysis}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metric} & \textbf{GHE Wins} & \textbf{CLAHE Wins} & \textbf{Total Images} \\
+\midrule
+PSNR & 0 (0\%) & 22 (100\%) & 22 \\
+SSIM & 0 (0\%) & 22 (100\%) & 22 \\
+Naturalness & 13 (59\%) & 9 (41\%) & 22 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Observations:}
+\begin{itemize}
+    \item CLAHE achieves higher PSNR and SSIM on \textbf{100\% of images}
+    \item GHE shows slightly better naturalness on 59\% of images
+    \item CLAHE provides more consistent, reliable enhancement across all categories
+\end{itemize}
+
+\newpage
+
+% ===================
+% VISUAL RESULTS
+% ===================
+\section{Visual Results}
+
+\subsection{Backlit Silhouette Enhancement}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{input/backlit_silhouette_01.jpg}
+        \caption{Original}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{output/backlit_silhouette_01_ghe.png}
+        \caption{GHE}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{output/backlit_silhouette_01_clahe_clip2.0_tile8.png}
+        \caption{CLAHE}
+    \end{subfigure}
+    \caption{Backlit silhouette enhancement comparison. CLAHE recovers significantly more detail in shadow regions while maintaining highlight information. PSNR: GHE=12.13 dB, CLAHE=21.63 dB}
+    \label{fig:backlit-comparison}
+\end{figure}
+
+\subsection{Dark Portrait Enhancement}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{input/dark_portrait_01.jpg}
+        \caption{Original}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{output/dark_portrait_01_ghe.png}
+        \caption{GHE}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{output/dark_portrait_01_clahe_clip2.0_tile8.png}
+        \caption{CLAHE}
+    \end{subfigure}
+    \caption{Dark portrait enhancement. CLAHE reveals facial features and texture while GHE produces over-enhanced, unnatural results. PSNR: GHE=3.89 dB, CLAHE=27.39 dB}
+    \label{fig:dark-comparison}
+\end{figure}
+
+\subsection{Foggy Landscape Enhancement}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{input/foggy_landscape_01.jpg}
+        \caption{Original}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{output/foggy_landscape_01_ghe.png}
+        \caption{GHE}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{output/foggy_landscape_01_clahe_clip2.0_tile8.png}
+        \caption{CLAHE}
+    \end{subfigure}
+    \caption{Foggy landscape enhancement. Both methods improve visibility, but CLAHE preserves more natural appearance. PSNR: GHE=16.14 dB, CLAHE=25.56 dB}
+    \label{fig:foggy-comparison}
+\end{figure}
+
+\subsection{Night Street Enhancement}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{input/night_street_01.jpg}
+        \caption{Original}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{output/night_street_01_ghe.png}
+        \caption{GHE}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{output/night_street_01_clahe_clip2.0_tile8.png}
+        \caption{CLAHE}
+    \end{subfigure}
+    \caption{Night street scene enhancement. CLAHE adapts to local lighting variations better than GHE. PSNR: GHE=9.32 dB, CLAHE=18.73 dB}
+    \label{fig:night-comparison}
+\end{figure}
+
+\newpage
+
+% ===================
+% DISCUSSION
+% ===================
+\section{Discussion}
+
+\subsection{Key Findings}
+
+\paragraph{CLAHE Superiority:}
+CLAHE demonstrates clear superiority over GHE across nearly all quantitative metrics. The average PSNR improvement of 80.6\% (22.18 dB vs 12.28 dB) and SSIM improvement of 38.9\% (0.807 vs 0.581) indicate substantially better quality preservation and structural similarity. Most significantly, CLAHE's over-enhancement rate of only 31.8\% compared to GHE's 86.4\% demonstrates its ability to enhance images without introducing unnatural artifacts.
+
+\paragraph{Adaptive Processing Advantage:}
+The superior performance of CLAHE can be attributed to its adaptive, tile-based processing approach. By computing histogram equalization locally within small tiles, CLAHE can enhance different regions of an image according to their local characteristics. This is particularly beneficial for images with non-uniform illumination, such as backlit scenes or indoor window lighting scenarios.
+
+\paragraph{Contrast vs Quality Trade-off:}
+While GHE achieves higher average contrast improvement (144.47\% vs 109.99\%), this comes at a significant cost to image quality. The aggressive global transformation often produces over-enhanced, unnatural-looking results. CLAHE's clip limit mechanism prevents excessive contrast enhancement, resulting in more visually pleasing and natural-looking enhanced images.
+
+\paragraph{Category-Specific Performance:}
+\begin{itemize}
+    \item \textbf{Extreme Low-Light (Dark Portrait, Low-Light Interior):} CLAHE excels with PSNR improvements of 17-14 dB, effectively recovering detail from severely underexposed regions.
+    \item \textbf{High-Quality Originals (Misty Mountain, Foggy Landscape):} Both methods perform relatively well, with smaller performance gaps, indicating diminishing returns for already well-exposed images.
+    \item \textbf{Complex Lighting (Backlit Silhouette, Indoor Window Light):} CLAHE's adaptive processing handles varying illumination levels more effectively than GHE's global approach.
+    \item \textbf{Night Scenes:} CLAHE provides substantial improvements while maintaining naturalness, crucial for surveillance and security applications.
+\end{itemize}
+
+\subsection{Computational Considerations}
+
+\paragraph{Processing Time:}
+GHE is computationally simpler and faster than CLAHE due to its single global histogram computation. CLAHE requires:
+\begin{itemize}
+    \item Division of image into tiles
+    \item Histogram computation for each tile
+    \item Clip limiting operations
+    \item Bilinear interpolation for boundary smoothing
+\end{itemize}
+
+However, modern hardware acceleration (GPU processing) can mitigate this difference, making CLAHE practical for real-time applications.
+
+\paragraph{Parameter Sensitivity:}
+CLAHE requires tuning of two key parameters:
+\begin{itemize}
+    \item \textbf{Clip Limit (2.0):} Controls the degree of contrast enhancement
+    \item \textbf{Tile Grid Size (8×8):} Determines the spatial adaptivity
+\end{itemize}
+
+Our experiments used standard values (clip limit=2.0, tile size=8×8), which proved effective across diverse image categories. GHE requires no parameter tuning, making it simpler to deploy but less flexible.
+
+\subsection{Practical Applications}
+
+\paragraph{Medical Imaging:}
+CLAHE is widely used in medical imaging (X-rays, MRI, CT scans) where local contrast enhancement is crucial for diagnostic accuracy. The clip limiting prevents noise amplification, which is critical for medical applications.
+
+\paragraph{Surveillance and Security:}
+For low-light surveillance footage, CLAHE provides better detail recovery while maintaining naturalness. The 100\% improvement in PSNR and SSIM makes enhanced images more suitable for both human viewing and automated analysis.
+
+\paragraph{Photography and Consumer Applications:}
+Modern smartphone cameras and photo editing software increasingly use CLAHE-like adaptive algorithms. The balance between enhancement and naturalness (naturalness score: 0.892) makes CLAHE suitable for consumer applications where visual aesthetics are important.
+
+\paragraph{Autonomous Vehicles:}
+Vision systems for autonomous vehicles can benefit from CLAHE's ability to handle varying lighting conditions (day/night transitions, tunnel entrances, shadows) while maintaining reliable feature detection.
+
+\subsection{Limitations and Challenges}
+
+\paragraph{GHE Limitations:}
+\begin{itemize}
+    \item Over-enhancement in 86.4\% of test images
+    \item Poor performance with non-uniform illumination
+    \item Cannot preserve local details in high dynamic range scenes
+    \item May amplify noise in uniform regions
+    \item Loss of naturalness (especially evident in portraits)
+\end{itemize}
+
+\paragraph{CLAHE Limitations:}
+\begin{itemize}
+    \item Higher computational cost than GHE
+    \item Parameter tuning required for optimal results
+    \item Potential tiling artifacts with improper configuration
+    \item May over-enhance noise in very low-light regions
+    \item Still produces over-enhancement in 31.8\% of cases
+\end{itemize}
+
+\paragraph{Color Space Considerations:}
+Both methods were applied in LAB color space to preserve color information while enhancing luminance. Alternative approaches include:
+\begin{itemize}
+    \item \textbf{YCrCb:} Separates luminance and chrominance
+    \item \textbf{HSV:} Preserves hue while enhancing value
+    \item \textbf{RGB:} Direct channel-wise processing (may cause color shifts)
+\end{itemize}
+
+\subsection{Lessons Learned}
+
+\begin{enumerate}
+    \item \textbf{Adaptive methods outperform global methods:} Local processing is essential for handling non-uniform illumination
+    \item \textbf{Clip limiting is crucial:} Prevents over-enhancement and noise amplification
+    \item \textbf{Color space matters:} LAB processing preserves color fidelity better than RGB
+    \item \textbf{Comprehensive evaluation essential:} Single metrics (PSNR, SSIM) insufficient; naturalness and over-enhancement detection provide valuable additional insights
+    \item \textbf{Category-specific behavior:} Performance varies significantly across image types; no one-size-fits-all solution
+    \item \textbf{Quality-efficiency trade-off:} Higher computational cost of CLAHE justified by substantial quality improvements
+\end{enumerate}
+
+\subsection{Future Work}
+
+Given additional time and resources, several extensions would be valuable:
+
+\begin{itemize}
+    \item \textbf{Parameter Optimization:} Systematic grid search for optimal CLAHE parameters (clip limit, tile size) per category
+    \item \textbf{Hybrid Methods:} Combining GHE and CLAHE based on local image characteristics
+    \item \textbf{Deep Learning Enhancement:} Using CNNs for learned image enhancement with histogram equalization as preprocessing
+    \item \textbf{Multi-scale CLAHE:} Applying CLAHE at multiple spatial scales for improved detail enhancement
+    \item \textbf{Perceptual Quality Metrics:} Incorporating human visual system models for more accurate quality assessment
+    \item \textbf{Real-time Implementation:} GPU-accelerated CLAHE for video processing applications
+    \item \textbf{Noise-Aware Enhancement:} Incorporating denoising before histogram equalization
+    \item \textbf{HDR Tone Mapping:} Combining histogram equalization with tone mapping for extreme dynamic range
+    \item \textbf{User Study:} Subjective evaluation with human observers to validate quantitative metrics
+    \item \textbf{Additional Datasets:} Testing on medical images, satellite imagery, and underwater photography
+\end{itemize}
+
+\newpage
+
+% ===================
+% CONCLUSION
+% ===================
+\section{Conclusion}
+
+This comprehensive study provides a rigorous comparative analysis of Global Histogram Equalization (GHE) and Contrast Limited Adaptive Histogram Equalization (CLAHE) for image enhancement across 11 challenging image categories. The experimental results conclusively demonstrate CLAHE's superiority over GHE across nearly all quantitative and qualitative metrics.
+
+\textbf{Summary of Findings:}
+\begin{itemize}
+    \item CLAHE achieves 80.6\% higher PSNR (22.18 dB vs 12.28 dB)
+    \item CLAHE shows 38.9\% better SSIM (0.807 vs 0.581)
+    \item CLAHE has 63\% lower over-enhancement rate (31.8\% vs 86.4\%)
+    \item CLAHE wins on 100\% of images for PSNR and SSIM metrics
+    \item Both methods improve entropy and contrast, but CLAHE does so more gracefully
+\end{itemize}
+
+\textbf{Practical Recommendations:}
+\begin{itemize}
+    \item \textbf{Use CLAHE for:} Medical imaging, surveillance, photography, general-purpose enhancement
+    \item \textbf{Use GHE for:} Real-time processing with severe computational constraints, simple preprocessing
+    \item \textbf{Parameters:} Clip limit=2.0, tile size=8×8 work well across diverse categories
+    \item \textbf{Color Space:} LAB processing recommended for color images
+\end{itemize}
+
+The substantial performance advantages of CLAHE justify its higher computational cost for most practical applications. Modern hardware acceleration makes CLAHE feasible even for real-time video processing. For researchers and practitioners working with challenging imaging conditions—low light, backlighting, fog, or uneven illumination—CLAHE represents the clear method of choice.
+
+This project demonstrates the importance of adaptive image processing techniques and comprehensive multi-metric evaluation. While GHE remains useful for educational purposes and resource-constrained scenarios, CLAHE's superior quality preservation, naturalness, and robustness make it the preferred solution for modern image enhancement applications.
+
+\newpage
+
+% ===================
+% REFERENCES
+% ===================
+\section{References}
+
+\begin{enumerate}
+    \item Pizer, S. M., et al. (1987). "Adaptive histogram equalization and its variations." \textit{Computer Vision, Graphics, and Image Processing}, 39(3), 355-368.
+
+    \item Zuiderveld, K. (1994). "Contrast limited adaptive histogram equalization." \textit{Graphics Gems IV}, Academic Press, 474-485.
+
+    \item Gonzalez, R. C., \& Woods, R. E. (2018). \textit{Digital Image Processing} (4th ed.). Pearson.
+
+    \item Wang, Z., et al. (2004). "Image quality assessment: from error visibility to structural similarity." \textit{IEEE Transactions on Image Processing}, 13(4), 600-612.
+
+    \item Reza, A. M. (2004). "Realization of the contrast limited adaptive histogram equalization (CLAHE) for real-time image enhancement." \textit{Journal of VLSI Signal Processing Systems}, 38(1), 35-44.
+
+    \item OpenCV Documentation (2024). "Histogram Equalization." \url{https://docs.opencv.org/}
+
+    \item Stark, J. A. (2000). "Adaptive image contrast enhancement using generalizations of histogram equalization." \textit{IEEE Transactions on Image Processing}, 9(5), 889-896.
+\end{enumerate}
+
+\newpage
+
+% ===================
+% SOURCE CODE
+% ===================
+\section{Source Code}
+
+\subsection{Main Processing Script}
+
+\textbf{File:} \texttt{src/main.py}
+
+\lstinputlisting[language=Python]{src/main.py}
+
+\newpage
+
+\subsection{Global Histogram Equalization Implementation}
+
+\textbf{File:} \texttt{src/ghe.py}
+
+\lstinputlisting[language=Python]{src/ghe.py}
+
+\newpage
+
+\subsection{CLAHE Implementation}
+
+\textbf{File:} \texttt{src/clahe.py}
+
+\lstinputlisting[language=Python]{src/clahe.py}
+
+\newpage
+
+\subsection{Metrics Evaluation Module}
+
+\textbf{File:} \texttt{src/metrics.py}
+
+\lstinputlisting[language=Python]{src/metrics.py}
+
+\end{document}
